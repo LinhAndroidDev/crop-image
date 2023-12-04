@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">RoomLogin</string>
+    <string name="register">Đăng kí</string>
+    <string name="enter_email">Nhập email</string>
+    <string name="password">Mật khẩu</string>
+    <string name="login">Đăng nhập</string>
+    <string name="home">Trang chủ</string>
+    <string name="select_language">Lựa chọn ngôn ngữ</string>
+</resources>
