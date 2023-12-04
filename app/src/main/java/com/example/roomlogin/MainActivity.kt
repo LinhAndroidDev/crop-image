@@ -2,17 +2,20 @@ package com.example.roomlogin
 
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContract
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.room.Room
 import com.example.roomlogin.databinding.ActivityMainBinding
+import com.theartofdev.edmodo.cropper.CropImage
 import com.yalantis.ucrop.UCrop
 import java.io.File
 
@@ -20,6 +23,14 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
 
     private lateinit var userAdapter: UserAdapter
     var users: List<User> = arrayListOf()
+
+    var cameraPermission: ArrayList<String>? = null
+    var storagePermission: Array<String>? = null
+    var imageUri: Uri? = null
+
+    companion object{
+        const val STORAGE_REQUEST = 200
+    }
 
     private val uCropContract = object : ActivityResultContract<List<Uri>, Uri>(){
         override fun createIntent(context: Context, input: List<Uri>): Intent {
@@ -45,7 +56,7 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
     }
 
     private val cropImage = registerForActivityResult(uCropContract) {
-        binding.cropImg.setImageURI(it)
+        binding.uCropImg.setImageURI(it)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -83,8 +94,65 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
             startActivity(intent)
         }
 
-        binding.cropImg.setOnClickListener {
+        binding.uCropImg.setOnClickListener {
             getContent.launch("image/*")
+        }
+
+        cropperImage()
+    }
+
+    private fun cropperImage() {
+        cameraPermission = arrayListOf(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
+
+        binding.cropperImg.setOnClickListener {
+            if(!checkStoragePermission()){
+                requestStoragePermission()
+            }else{
+                pickFromGallery()
+            }
+        }
+    }
+
+    private fun checkStoragePermission(): Boolean {
+        return ContextCompat.checkSelfPermission(
+            this, android.Manifest.permission.WRITE_EXTERNAL_STORAGE
+        ) == PackageManager.PERMISSION_GRANTED
+    }
+
+    private fun requestStoragePermission(){
+        ActivityCompat.requestPermissions(this, arrayOf(android.Manifest.permission.WRITE_EXTERNAL_STORAGE), STORAGE_REQUEST)
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+
+        if(requestCode == STORAGE_REQUEST){
+            if(grantResults.isNotEmpty()){
+                if(grantResults[0] == PackageManager.PERMISSION_GRANTED){
+                    pickFromGallery()
+                }else{
+                    Toast.makeText(this@MainActivity, "Please Enable Storage Permission", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+    private fun pickFromGallery() {
+        CropImage.activity().start(this@MainActivity)
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+
+        if(requestCode == CropImage.CROP_IMAGE_ACTIVITY_REQUEST_CODE){
+            if(requestCode == RESULT_OK){
+                val resultUri: Uri = CropImage.getActivityResult(data).uri
+                binding.cropperImg.setImageURI(resultUri)
+            }
         }
     }
 
